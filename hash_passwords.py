@@ -2,8 +2,8 @@ import bcrypt
 
 # Plain text passwords
 passwords = {
-    "dp": "DudeAbides2022",
-    "ohm": "DudeAbides2022"
+    "dp": "Sweet_Rug",
+    "ohm": "Sweet_Rug"
 }
 
 # Dictionary to store hashed passwords

@@ -13,12 +13,10 @@ import streamlit_authenticator as stauth
 
 load_dotenv()
 
-
 def str_to_bool(str_input):
     if not isinstance(str_input, str):
         return False
     return str_input.lower() == "true"
-
 
 # Load environment variables
 azure_openai_endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
@@ -27,11 +25,10 @@ openai_api_key = os.environ.get("OPENAI_API_KEY")
 authentication_required = str_to_bool(os.environ.get("AUTHENTICATION_REQUIRED", False))
 assistant_id = os.environ.get("ASSISTANT_ID")
 instructions = os.environ.get("RUN_INSTRUCTIONS", "")
-assistant_title = os.environ.get("ASSISTANT_TITLE", "Assistants API UI")
+assistant_title = os.environ.get("ASSISTANT_TITLE", "The Dude Abides")
 enabled_file_upload_message = os.environ.get(
     "ENABLED_FILE_UPLOAD_MESSAGE", "Upload a file"
 )
-
 
 # Load authentication configuration
 if authentication_required:
@@ -54,7 +51,6 @@ if azure_openai_endpoint and azure_openai_key:
     )
 else:
     client = openai.OpenAI(api_key=openai_api_key)
-
 
 class EventHandler(AssistantEventHandler):
     @override
@@ -159,7 +155,6 @@ class EventHandler(AssistantEventHandler):
             ) as stream:
                 stream.until_done()
 
-
 def create_thread(content, file):
     messages = [
         {
@@ -172,7 +167,6 @@ def create_thread(content, file):
     thread = client.beta.threads.create()
     return thread
 
-
 def create_message(thread, content, file):
     attachments = []
     if file is not None:
@@ -183,7 +177,6 @@ def create_message(thread, content, file):
         thread_id=thread.id, role="user", content=content, attachments=attachments
     )
 
-
 def create_file_link(file_name, file_id):
     content = client.files.content(file_id)
     content_type = content.response.headers["content-type"]
@@ -191,12 +184,11 @@ def create_file_link(file_name, file_id):
     link_tag = f'<a href="data:{content_type};base64,{b64}" download="{file_name}">Download Link</a>'
     return link_tag
 
-
 def format_annotation(text):
     citations = []
     text_value = text.value
     for index, annotation in enumerate(text.annotations):
-        text_value = text.value.replace(annotation.text, f" [{index}]")
+        text_value = text_value.replace(annotation.text, f" [{index}]")
 
         if file_citation := getattr(annotation, "file_citation", None):
             cited_file = client.files.retrieve(file_citation.file_id)
@@ -212,7 +204,6 @@ def format_annotation(text):
     text_value += "\n\n" + "\n".join(citations)
     return text_value
 
-
 def run_stream(user_input, file):
     if "thread" not in st.session_state:
         st.session_state.thread = create_thread(user_input, file)
@@ -224,17 +215,14 @@ def run_stream(user_input, file):
     ) as stream:
         stream.until_done()
 
-
 def handle_uploaded_file(uploaded_file):
     file = client.files.create(file=uploaded_file, purpose="assistants")
     return file
-
 
 def render_chat():
     for chat in st.session_state.chat_log:
         with st.chat_message(chat["name"]):
             st.markdown(chat["msg"], True)
-
 
 if "tool_call" not in st.session_state:
     st.session_state.tool_calls = []
@@ -245,17 +233,14 @@ if "chat_log" not in st.session_state:
 if "in_progress" not in st.session_state:
     st.session_state.in_progress = False
 
-
 def disable_form():
     st.session_state.in_progress = True
-
 
 def login():
     if st.session_state["authentication_status"] is False:
         st.error("Username/password is incorrect")
     elif st.session_state["authentication_status"] is None:
         st.warning("Please enter your username and password")
-
 
 def main():
     if (
@@ -270,7 +255,81 @@ def main():
         else:
             authenticator.logout(location="sidebar")
 
-    st.title(assistant_title)
+    # Add custom CSS
+    st.markdown("""
+    <style>
+    .st-emotion-cache-1eo1tir {
+        max-width: 90% !important;
+        padding: 1rem 1rem 1rem !important;
+    }
+
+    ol {
+        line-height: 1.5 !important;
+    }
+
+    .profile-photo {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        margin-bottom: 15px;
+    }
+
+    @media screen and (max-width: 768px) {
+        p {
+        line-height:1.35 !important;
+        font-size: 0.85rem !important;
+        margin: 0px 0px 0.5rem !important;
+        }
+
+        ol {
+        line-height: 1.35 !important;
+        }
+
+        .profile-photo {
+        width: 75px;
+        height: 75px;
+        border-radius: 50%;
+        margin-bottom: 10px;
+        }
+
+        h4 {
+        padding: 0px 0px 0.5rem !important;
+        }
+
+        h1 {
+        font-size: 1.5rem !important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Add the profile photo
+    st.markdown("""
+    <div style="display: flex; align-items: center;">
+        <img src="data:image/png;base64,{}" class="profile-photo">
+        <h1 style="margin-left: 20px;">{}</h1>
+    </div>
+    """.format(base64.b64encode(open("profile.png", "rb").read()).decode(), assistant_title), unsafe_allow_html=True)
+
+    # Add the additional text below the title
+    st.markdown("""
+    **Transform your emails and texts into the laid-back, chill style of The Dude from *The Big Lebowski*.**
+
+    #### How:
+    1. Copy and paste your email, text, or any message into the box below.
+    
+    2. Hit submit, and your message will be transformed into 'Dude Speak'.
+
+    3. Copy the message, send it, and chill.
+
+    #### Example:
+    **Original Message**: 
+    "Can you please update me on the status of the project? I need to know if there are any outstanding issues."
+
+    **Translation in 'Dude Speak'**: 
+    "Hey man, can you give me a lowdown on the project status? Need to know if there are any hang-ups."
+    """)
+
     user_msg = st.chat_input(
         "Message", on_submit=disable_form, disabled=st.session_state.in_progress
     )
@@ -310,7 +369,6 @@ def main():
         st.rerun()
 
     render_chat()
-
 
 if __name__ == "__main__":
     main()
