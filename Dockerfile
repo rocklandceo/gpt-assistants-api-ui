@@ -14,6 +14,7 @@ RUN apt update && \
 EXPOSE 8501
 
 COPY . /app
+COPY .streamlit /app/.streamlit  # Add this line to copy the .streamlit directory
 
 ENTRYPOINT ["streamlit", "run"]
 
